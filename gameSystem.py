@@ -1,9 +1,10 @@
 import subprocess
 import select
 import json
+import time
 
 H, W = 17, 15
-acts, ds, dx, dy = 'wlsp', 'ldru', [0,-1,0,1], [-1,0,1,0]
+acts, ds, dx, dy = 'wlsp', 'lurd', [0,-1,0,1], [-1,0,1,0]
 WALL, ITEM, COOL, HOT, NOTHING = 2,3,1,1,0
 
 WAIT_TIME = 0.5
@@ -11,15 +12,14 @@ WAIT_TIME = 0.5
 class Game:
     logs = []
 
-    # field = ['0C2000', 0002H0']
     def __init__(self, field, turn):
         self.turn = turn
         self.field = [[0]*W for _ in range(H)]
         for i in range(H):
             for j in range(W):
-                if self.field[i][j]=='H':
+                if field[i][j]=='H':
                     self.hot = [i, j]
-                elif self.field[i][j]=='C':
+                elif field[i][j]=='C':
                     self.cool = [i, j]
                 else:
                     self.field[i][j] = int(field[i][j])
@@ -27,10 +27,12 @@ class Game:
     def is_done(self):
         [hi, hj], [ci, cj] = self.hot, self.cool
         outof   = not(0<=hi<H and 0<=hj<W) or not(0<=ci<H and 0<=cj<W)
+        if outof:
+            return True
         mounted = self.hot == self.cool
         puted   = self.field[hi][hj]==WALL or self.field[ci][cj]==WALL
         finish  = self.turn <= 0
-        return outof or mounted or puted or finish
+        return mounted or puted or finish
     
     def step(self, order, is_hot=True):
         if is_hot:
@@ -40,7 +42,7 @@ class Game:
         d = ds.index(direct)
         result= self.walk(d) if act=='w' else \
                 self.look(d) if act=='l' else \
-                self.search() if act=='s' else \
+                self.search(d) if act=='s' else \
                 self.put(d)
         
         self.logs.append(order)
@@ -55,7 +57,8 @@ class Game:
         act, direct = order
         return act in acts and direct in ds
 
-    def _search(self, x, y):
+    def _search(self):
+        x, y = self.cool
         res = ''
         for i in range(-1,2):
             for j in range(-1,2):
@@ -66,11 +69,21 @@ class Game:
                 res += e
         return res
     
-    def search(self, x, y, d):
-        return self._search(x+2*dx[d], y+2*dy[d])
+    def search(self, d):
+        self.cool[0] += 2*dx[d]
+        self.cool[1] += 2*dy[d]
+        res = self._search(*self.cool)
+        self.cool[0] -= 2*dx[d]
+        self.cool[1] -= 2*dy[d]
+        return res
     
-    def neibor(self):
-        return self._search(*self.hot)
+    def neibor(self, is_hot=True):
+        if is_hot:
+            self.hot, self.cool = self.cool, self.hot
+        res = self._search()
+        if is_hot:
+            self.hot, self.cool = self.cool, self.hot
+        return res
     
     def look(self, d):
         res = ''
@@ -82,11 +95,18 @@ class Game:
         return res
 
     def put(self, d):
-        self.field[dx[d]+self.cool[0]][dy[d]+self.self.cool[1]] = WALL
+        self.field[dx[d]+self.cool[0]][dy[d]+self.cool[1]] = WALL
+        return self.neibor(is_hot=False)
 
     def walk(self, d):
-        self.hot[0] += dx[d]
-        self.hot[1] += dy[d]
+        [x, y] = self.cool
+        nx, ny = x+dx[d], y+dy[d]
+        if 0<=nx<H and 0<=ny<W and self.field[nx][ny] == ITEM:
+            self.field[x][y] = WALL
+            self.field[nx][ny] = NOTHING
+        self.cool = [nx, ny]
+        
+        return self.neibor(is_hot=False)
     
     def print_field(self):
         for i in range(H):
@@ -98,7 +118,7 @@ class Game:
                 else:
                     print(self.field[i][j], end='')
             print()
-    
+        print()
 
 class ChildManager:
     def __init__(self):
@@ -108,19 +128,23 @@ class ChildManager:
         self.players.append(subprocess.Popen(player_program, 
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE))
+            stderr=subprocess.PIPE,
+            text=True))
     
     def send_to_player(self, player, message):
-        self.players[player].stdin.write(message.encode())
+        self.players[player].stdin.write(message+'\n')
         self.players[player].stdin.flush()
     
     def receive_from_player(self, player, wait_time) -> str:
         ready, _,_ = select.select([self.players[player].stdout], [], [], wait_time)
-        if ready:
-            return [True, self.players[player].stdout.readline().decode().strip()]
-        
-        err = self.players[player].stderr.read().decode().strip()
-        return [False, err if len(err) > 0 else "時間切れ。無限ループが発生している可能性があります."]
+        eready, _,_ = select.select([self.players[player].stderr], [], [], 0)
+        if len(eready):
+            return [False, self.players[player].stderr.read().strip()]
+        elif ready:
+            output = self.players[player].stdout.readline().strip()
+            return [True, output]
+        else:
+            return [False, "時間切れ。無限ループが発生している可能性があります."]
     
     def stop_players(self):
         for player in self.players:
@@ -139,7 +163,8 @@ def play_game(player1, player2, field, turn):
     errors = ["", ""]
 
     while not game.is_done():
-        neib = game.neibor()
+        neib = game.neibor(player_flag)
+
         manager.send_to_player(player_flag, neib)
         ok, result = manager.receive_from_player(player_flag, WAIT_TIME)
         if not ok:
@@ -148,9 +173,16 @@ def play_game(player1, player2, field, turn):
         if not Game.check_operation(result):
             errors[player_flag] = "不正な操作が行われました。"
             break
-        manager.send_to_player(game.step(result))
+        manager.send_to_player(player_flag, game.step(result, player_flag))
         player_flag = 1 - player_flag
-    
+
+        # ターミナルをclearを用いてクリアにする
+        # いかにその実装
+        game.print_field()
+        print('player act: ', result)
+        time.sleep(0.5)
+
+
     manager.stop_players()
     return {
         "log": game.logs,
@@ -158,16 +190,41 @@ def play_game(player1, player2, field, turn):
         "player2_error": errors[1]
     }
 
+def api(event, context):
+    body = json.loads(event['body'])
+    player1 = body['player1']
+    player2 = body['player2']
+    field = body['field']
+    turn = body['turn']
+    result = play_game(player1, player2, field, turn)
+    return {
+        "statusCode": 200,
+        "body": json.dumps(result)
+    }
 
+field = [
+    '000300000300000',
+    "0C0000000000000",
+    "000300030000300",
+    '022200000000003',
+    '000003000300030',
+    '003000003000000',
+    '000000000000220',
+    '000300030000000',
+    '023000030000032',
+    '300000000003000',
+    '020200000000000',
+    '000000003000300',
+    '000300030000300',
+    '300000000002220',
+    '000003000003000',
+    '0000000000000H0',
+    '000003000003000'
+]
+turn = 100
 
-# def api(event, context):
-#     body = json.loads(event['body'])
-#     player1 = body['player1']
-#     player2 = body['player2']
-#     field = body['field']
-#     turn = body['turn']
-#     result = play_game(player1, player2, field, turn)
-#     return {
-#         "statusCode": 200,
-#         "body": json.dumps(result)
-#     }
+if __name__ == '__main__':
+    player1 = ['python3', 'randomchoice.py']
+    player2 = ['python3', 'randomchoice.py']
+    result = play_game(player1, player2, field, turn)
+    print(result)
