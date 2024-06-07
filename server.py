@@ -13,6 +13,10 @@ get_user_program_url = 'https://v523hxaeizl6ffyducbjde67ye0iamfp.lambda-url.ap-n
 # curl -X POST -H "Content-Type: application/json" -d '{"UserID": "Sample", "slot": 0, "program": "print()", "language": "python"}' https://hpaiddjrprewsmr3kjbbvk5sfe0jmuyd.lambda-url.ap-northeast-1.on.aws/
 app = FastAPI()
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
 # 入力json形式は以下の通り
 # {
 #     "c_id": str,
