@@ -57,6 +57,8 @@ def battle(body: dict, response: Response):
                 script.extend([f'./{file_name}'])
                 delete_files.extend([file_name, f"{file_name}.cpp"])
     except Exception as e:
+        for file in delete_files:
+            os.system(f"rm {file}")
         response.status_code = 400
         return str(e)
     
