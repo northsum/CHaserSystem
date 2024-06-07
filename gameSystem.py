@@ -176,11 +176,9 @@ def play_game(player1, player2, field, turn):
         manager.send_to_player(player_flag, game.step(result, player_flag))
         player_flag = 1 - player_flag
 
-        # ターミナルをclearを用いてクリアにする
-        # いかにその実装
-        game.print_field()
-        print('player act: ', result)
-        time.sleep(0.5)
+        # game.print_field()
+        # print('player act: ', result)
+        # time.sleep(0.5)
 
 
     manager.stop_players()
@@ -202,29 +200,29 @@ def api(event, context):
         "body": json.dumps(result)
     }
 
-field = [
-    '000300000300000',
-    "0C0000000000000",
-    "000300030000300",
-    '022200000000003',
-    '000003000300030',
-    '003000003000000',
-    '000000000000220',
-    '000300030000000',
-    '023000030000032',
-    '300000000003000',
-    '020200000000000',
-    '000000003000300',
-    '000300030000300',
-    '300000000002220',
-    '000003000003000',
-    '0000000000000H0',
-    '000003000003000'
-]
-turn = 100
-
 if __name__ == '__main__':
-    player1 = ['python3', 'randomchoice.py']
-    player2 = ['python3', 'randomchoice.py']
+    field = [
+        '000300000300000',
+        "0C0000000000000",
+        "000300030000300",
+        '022200000000003',
+        '000003000300030',
+        '003000003000000',
+        '000000000000220',
+        '000300030000000',
+        '023000030000032',
+        '300000000003000',
+        '020200000000000',
+        '000000003000300',
+        '000300030000300',
+        '300000000002220',
+        '000003000003000',
+        '0000000000000H0',
+        '000003000003000'
+    ]
+    turn = 100
+
+    player1 = ['python3', './samples/randomchoice.py']
+    player2 = ['python3', './samples/looker.py']
     result = play_game(player1, player2, field, turn)
     print(result)
