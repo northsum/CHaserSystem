@@ -32,6 +32,7 @@ def read_root():
 # }
 @app.post("/battle", status_code=200)
 def battle(body: dict, response: Response):
+    delete_files = []
     try:
         board = body['board']
         turn = body['turn']
@@ -46,10 +47,9 @@ def battle(body: dict, response: Response):
         
         ch_program = [c_program.json(), h_program.json()]
         ch_script = [[], []]
-        delete_files = []
         for program, script in zip(ch_program, ch_script):
             if program['language'] == 'python':
-                script.extend(['python3', '-c', c_program['program']])
+                script.extend(['python3', '-c', program['program']])
             elif program['language'] == 'cpp':
                 file_name = str(random.randint(0, 100000000)) + 'exec'
                 os.system(f"echo '{c_program['program']}' > {file_name}.cpp")
