@@ -37,12 +37,12 @@ class Game:
         return mounted or puted or finish
     
     def lose(self, x, y):
+        if self.field[x][y] == WALL:
+            return True
         for i in range(4):
             if self.field[x+dx[i]][y+dy[i]] != WALL:
                 return False
-        if self.field[x][y] == WALL:
-            return True
-        return False
+        return True
     
     def return_winner(self):
         hot_lose = self.lose(*self.hot)
@@ -256,7 +256,7 @@ if __name__ == '__main__':
     ]
     turn = 100
 
-    player1 = ['python3', './samples/randomchoice.py']
+    player1 = ['python3', './samples/looker.py']
     player2 = ['python3', './samples/looker.py']
     result = play_game(player1, player2, field, turn)
     print(result)
@@ -271,7 +271,8 @@ if __name__ == '__main__':
     }
 
     print(data)
+    print(len(data['Acts']))
     
-    res = requests.post("https://hr5gyqk5rkxjtfdeyyskr5nc640kpscb.lambda-url.ap-northeast-1.on.aws/", json=data)
+    # res = requests.post("https://hr5gyqk5rkxjtfdeyyskr5nc640kpscb.lambda-url.ap-northeast-1.on.aws/", json=data)
 
-    print(res.text)
+    # print(res.text)
