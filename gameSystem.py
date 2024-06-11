@@ -53,7 +53,7 @@ class Game:
             elif self.hot_point < self.cool_point:
                 return "COOL"
             else:
-                return "Draw"
+                return "DRAW"
         elif hot_lose:
             return "COOL"
         elif cool_lose:
@@ -188,7 +188,7 @@ def play_game(player1, player2, field, turn):
 
     # 0: cool, 1: hot
     player_flag = 0
-    winner = "Draw"
+    winner = "DRAW"
     errors = ["", ""]
 
     while not game.is_done():
@@ -211,7 +211,7 @@ def play_game(player1, player2, field, turn):
         # print('player act: ', result)
         # time.sleep(0.5)
     
-    if winner == "Draw":
+    if winner == "DRAW":
         winner = game.return_winner()
 
     manager.stop_players()
@@ -234,45 +234,45 @@ def api(event, context):
         "body": json.dumps(result)
     }
 
-if __name__ == '__main__':
-    field = [
-        '000300000300000',
-        "0C0000000000000",
-        "000300030000300",
-        '022200000000003',
-        '000003000300030',
-        '003000003000000',
-        '000000000000220',
-        '000300030000000',
-        '023000030000032',
-        '300000000003000',
-        '020200000000000',
-        '000000003000300',
-        '000300030000300',
-        '300000000002220',
-        '000003000003000',
-        '0000000000000H0',
-        '000003000003000'
-    ]
-    turn = 100
+# if __name__ == '__main__':
+#     field = [
+#         '000300000300000',
+#         "0C0000000000000",
+#         "000300030000300",
+#         '022200000000003',
+#         '000003000300030',
+#         '003000003000000',
+#         '000000000000220',
+#         '000300030000000',
+#         '023000030000032',
+#         '300000000003000',
+#         '020200000000000',
+#         '000000003000300',
+#         '000300030000300',
+#         '300000000002220',
+#         '000003000003000',
+#         '0000000000000H0',
+#         '000003000003000'
+#     ]
+#     turn = 100
 
-    player1 = ['python3', './samples/looker.py']
-    player2 = ['python3', './samples/looker.py']
-    result = play_game(player1, player2, field, turn)
-    print(result)
+#     player1 = ['python3', './samples/looker.py']
+#     player2 = ['python3', './samples/looker.py']
+#     result = play_game(player1, player2, field, turn)
+#     print(result)
 
-    import requests
+#     import requests
 
-    data = {
-        "Acts": result['log'],
-        "Winner": result['winner'],
-        "Field": field,
-        "Turn": turn
-    }
+#     data = {
+#         "Acts": result['log'],
+#         "Winner": result['winner'],
+#         "Field": field,
+#         "Turn": turn
+#     }
 
-    print(data)
-    print(len(data['Acts']))
+#     print(data)
+#     print(len(data['Acts']))
     
-    # res = requests.post("https://hr5gyqk5rkxjtfdeyyskr5nc640kpscb.lambda-url.ap-northeast-1.on.aws/", json=data)
+#     # res = requests.post("https://hr5gyqk5rkxjtfdeyyskr5nc640kpscb.lambda-url.ap-northeast-1.on.aws/", json=data)
 
-    # print(res.text)
+#     # print(res.text)
