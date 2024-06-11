@@ -1,4 +1,6 @@
 from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
+
 import boto3
 import os
 import json
@@ -12,6 +14,18 @@ get_user_program_url = 'https://v523hxaeizl6ffyducbjde67ye0iamfp.lambda-url.ap-n
 # テスト用curlコマンドは以下の通り
 # curl -X POST -H "Content-Type: application/json" -d '{"UserID": "Sample", "slot": 0, "program": "print()", "language": "python"}' https://hpaiddjrprewsmr3kjbbvk5sfe0jmuyd.lambda-url.ap-northeast-1.on.aws/
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 @app.get("/")
 def read_root():
@@ -66,4 +80,7 @@ def battle(body: dict, response: Response):
     for file in delete_files:
         os.system(f"rm {file}")
 
-    return res
+    return {
+        **res,
+
+    }
