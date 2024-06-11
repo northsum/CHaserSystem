@@ -47,6 +47,8 @@ def read_root():
 @app.post("/battle", status_code=200)
 def battle(body: dict, response: Response):
     delete_files = []
+    board, ch_script = [], []
+    turn=0
     try:
         board = body['board']
         turn = body['turn']
