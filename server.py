@@ -47,8 +47,6 @@ def read_root():
 @app.post("/battle", status_code=200)
 def battle(body: dict, response: Response):
     delete_files = []
-    board, ch_script = [], []
-    turn=0
     try:
         board = body['board']
         turn = body['turn']
@@ -72,17 +70,13 @@ def battle(body: dict, response: Response):
                 os.system(f"g++ {file_name}.cpp -o {file_name}")
                 script.extend([f'./{file_name}'])
                 delete_files.extend([file_name, f"{file_name}.cpp"])
+        
+        res = play_game(ch_script[0], ch_script[1], board, turn)
+        for file in delete_files:
+            os.system(f"rm {file}")
+        return res
     except Exception as e:
         for file in delete_files:
             os.system(f"rm {file}")
         response.status_code = 400
         return str(e)
-    
-    res = play_game(ch_script[0], ch_script[1], board, turn)
-    for file in delete_files:
-        os.system(f"rm {file}")
-
-    return {
-        **res,
-
-    }
