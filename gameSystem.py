@@ -15,6 +15,8 @@ class Game:
     def __init__(self, field, turn):
         self.turn = turn
         self.field = [[0]*W for _ in range(H)]
+        self.hot_point = 0
+        self.cool_point = 0
         for i in range(H):
             for j in range(W):
                 if field[i][j]=='H':
@@ -34,9 +36,33 @@ class Game:
         finish  = self.turn <= 0
         return mounted or puted or finish
     
+    def lose(self, x, y):
+        for i in range(4):
+            if self.field[x+dx[i]][y+dy[i]] != WALL:
+                return False
+        if self.field[x][y] == WALL:
+            return True
+        return False
+    
+    def return_winner(self):
+        hot_lose = self.lose(*self.hot)
+        cool_lose = self.lose(*self.cool)
+        if hot_lose == cool_lose:
+            if self.hot_point > self.cool_point:
+                return "HOT"
+            elif self.hot_point < self.cool_point:
+                return "COOL"
+            else:
+                return "Draw"
+        elif hot_lose:
+            return "COOL"
+        elif cool_lose:
+            return "HOT"
+    
     def step(self, order, is_hot=True):
         if is_hot:
             self.cool, self.hot = self.hot, self.cool
+            self.hot_point, self.cool_point = self.cool_point, self.hot_point
 
         act, direct = order
         d = ds.index(direct)
@@ -50,6 +76,7 @@ class Game:
 
         if is_hot:
             self.cool, self.hot = self.hot, self.cool
+            self.hot_point, self.cool_point = self.cool_point, self.hot_point
         
         return result
     
@@ -104,6 +131,7 @@ class Game:
         if 0<=nx<H and 0<=ny<W and self.field[nx][ny] == ITEM:
             self.field[x][y] = WALL
             self.field[nx][ny] = NOTHING
+            self.cool_point += 1
         self.cool = [nx, ny]
         
         return self.neibor(is_hot=False)
@@ -160,6 +188,7 @@ def play_game(player1, player2, field, turn):
 
     # 0: cool, 1: hot
     player_flag = 0
+    winner = "Draw"
     errors = ["", ""]
 
     while not game.is_done():
@@ -169,9 +198,11 @@ def play_game(player1, player2, field, turn):
         ok, result = manager.receive_from_player(player_flag, WAIT_TIME)
         if not ok:
             errors[player_flag] = result
+            winner = "COOL" if player_flag else "HOT"
             break
         if not Game.check_operation(result):
             errors[player_flag] = "不正な操作が行われました。"
+            winner = "COOL" if player_flag else "HOT"
             break
         manager.send_to_player(player_flag, game.step(result, player_flag))
         player_flag = 1 - player_flag
@@ -179,11 +210,14 @@ def play_game(player1, player2, field, turn):
         # game.print_field()
         # print('player act: ', result)
         # time.sleep(0.5)
-
+    
+    if winner == "Draw":
+        winner = game.return_winner()
 
     manager.stop_players()
     return {
         "log": game.logs,
+        "winner": winner,
         "player1_error": errors[0],
         "player2_error": errors[1]
     }
@@ -226,3 +260,18 @@ if __name__ == '__main__':
     player2 = ['python3', './samples/looker.py']
     result = play_game(player1, player2, field, turn)
     print(result)
+
+    import requests
+
+    data = {
+        "Acts": result['log'],
+        "Winner": result['winner'],
+        "Field": field,
+        "Turn": turn
+    }
+
+    print(data)
+    
+    res = requests.post("https://hr5gyqk5rkxjtfdeyyskr5nc640kpscb.lambda-url.ap-northeast-1.on.aws/", json=data)
+
+    print(res.text)
