@@ -10,9 +10,9 @@ WALL, ITEM, COOL, HOT, NOTHING = 2,3,1,1,0
 WAIT_TIME = 0.5
 
 class Game:
-    logs = []
 
     def __init__(self, field, turn):
+        self.logs = []
         self.turn = turn
         self.field = [[0]*W for _ in range(H)]
         self.hot_point = 0
@@ -72,7 +72,6 @@ class Game:
                 self.put(d)
         
         self.logs.append(order)
-        self.turn -= 1
 
         if is_hot:
             self.cool, self.hot = self.hot, self.cool
@@ -191,7 +190,7 @@ def play_game(player1, player2, field, turn):
     winner = "DRAW"
     errors = ["", ""]
 
-    while not game.is_done():
+    while not game.is_done() and game.turn > 0:
         neib = game.neibor(player_flag)
 
         manager.send_to_player(player_flag, neib)
@@ -205,6 +204,7 @@ def play_game(player1, player2, field, turn):
             winner = "COOL" if player_flag else "HOT"
             break
         manager.send_to_player(player_flag, game.step(result, player_flag))
+        game.turn -= 1
         player_flag = 1 - player_flag
 
         # game.print_field()
