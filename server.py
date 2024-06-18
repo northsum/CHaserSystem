@@ -50,14 +50,18 @@ def battle(body: dict, response: Response):
     try:
         board = body['board']
         turn = body['turn']
+        if len(board) != 17 or len(board[0]) != 15:
+            raise Exception("Invalid board size")
+        if turn > 200:
+            raise Exception("Invalid turn")
+        
 
         # {'UserID': 'Sample', 'slot': 0}
         c_program = requests.post(get_user_program_url, json={'UserID':  body['c_id'], 'slot': body['c_slot']})
         h_program = requests.post(get_user_program_url, json={'UserID':  body['h_id'], 'slot': body['h_slot']})
 
         if not (c_program.ok and h_program.ok):
-            response.status_code = 400
-            return "Failed to get user program"
+            raise Exception("Failed to get user program")
         
         ch_program = [c_program.json(), h_program.json()]
         ch_script = [[], []]
