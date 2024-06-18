@@ -37,6 +37,8 @@ class Game:
         return mounted or puted or finish
     
     def lose(self, x, y):
+        if not(0<=x<H and 0<=y<W):
+            return True
         if self.field[x][y] == WALL:
             return True
         for i in range(4):
@@ -256,8 +258,8 @@ def api(event, context):
 #     ]
 #     turn = 100
 
-#     player1 = ['python3', './samples/looker.py']
-#     player2 = ['python3', './samples/looker.py']
+#     player1 = ['python3', './samples/only_wu.py']
+#     player2 = ['python3', './samples/only_wu.py']
 #     result = play_game(player1, player2, field, turn)
 #     print(result)
 
