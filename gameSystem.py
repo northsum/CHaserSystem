@@ -28,8 +28,7 @@ class Game:
     
     def is_done(self):
         [hi, hj], [ci, cj] = self.hot, self.cool
-        outof   = not(0<=hi<H and 0<=hj<W) or not(0<=ci<H and 0<=cj<W)
-        if outof:
+        if self.lose(*self.cool) or self.lose(*self.hot):
             return True
         mounted = self.hot == self.cool
         puted   = self.field[hi][hj]==WALL or self.field[ci][cj]==WALL
@@ -100,7 +99,7 @@ class Game:
     def search(self, d):
         self.cool[0] += 2*dx[d]
         self.cool[1] += 2*dy[d]
-        res = self._search(*self.cool)
+        res = self._search()
         self.cool[0] -= 2*dx[d]
         self.cool[1] -= 2*dy[d]
         return res
@@ -164,7 +163,7 @@ class ChildManager:
         self.players[player].stdin.write(message+'\n')
         self.players[player].stdin.flush()
     
-    def receive_from_player(self, player, wait_time) -> str:
+    def receive_from_player(self, player, wait_time) -> [bool, str]:
         ready, _,_ = select.select([self.players[player].stdout], [], [], wait_time)
         eready, _,_ = select.select([self.players[player].stderr], [], [], 0)
         if len(eready):
@@ -236,32 +235,35 @@ def api(event, context):
         "body": json.dumps(result)
     }
 
-# if __name__ == '__main__':
-#     field = [
-#         '000300000300000',
-#         "0C0000000000000",
-#         "000300030000300",
-#         '022200000000003',
-#         '000003000300030',
-#         '003000003000000',
-#         '000000000000220',
-#         '000300030000000',
-#         '023000030000032',
-#         '300000000003000',
-#         '020200000000000',
-#         '000000003000300',
-#         '000300030000300',
-#         '300000000002220',
-#         '000003000003000',
-#         '0000000000000H0',
-#         '000003000003000'
-#     ]
-#     turn = 100
+if __name__ == '__main__':
+    now = time.time()
+    field = [
+        '000300000300000',
+        "0C0000000000000",
+        "000300030000300",
+        '022200000000003',
+        '000003000300030',
+        '003000003000000',
+        '000000000000220',
+        '000300030000000',
+        '023000030000032',
+        '300000000003000',
+        '020200000000000',
+        '000000003000300',
+        '000300030000300',
+        '300000000002220',
+        '000003000003000',
+        '0000000000000H0',
+        '000003000003000'
+    ]
+    turn = 100
 
-#     player1 = ['python3', './samples/only_wu.py']
-#     player2 = ['python3', './samples/only_wu.py']
-#     result = play_game(player1, player2, field, turn)
-#     print(result)
+    player1 = ['python3', './samples/ii.py']
+    player2 = ['python3', './samples/randomchoice.py']
+    result = play_game(player1, player2, field, turn)
+
+    print('past time: ', time.time()-now)
+    print(result)
 
 #     import requests
 
