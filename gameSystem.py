@@ -2,12 +2,14 @@ import subprocess
 import select
 import json
 import time
+import resource
 
 H, W = 17, 15
 acts, ds, dx, dy = 'wlsp', 'lurd', [0,-1,0,1], [-1,0,1,0]
 WALL, ITEM, COOL, HOT, NOTHING = 2,3,1,1,0
 
 WAIT_TIME = 0.5
+MAX_MEMORY = 300*1024*1024
 
 class Game:
 
@@ -157,6 +159,7 @@ class ChildManager:
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            preexec_fn=resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY, MAX_MEMORY)),
             text=True))
     
     def send_to_player(self, player, message):
