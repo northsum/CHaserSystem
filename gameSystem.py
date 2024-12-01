@@ -6,19 +6,24 @@ import resource
 
 H, W = 17, 15
 acts, ds, dx, dy = 'wlsp', 'lurd', [0,-1,0,1], [-1,0,1,0]
-WALL, ITEM, COOL, HOT, NOTHING = 2,3,1,1,0
+NOTHING, COOL, HOT, WALL, ITEM = 0, 1, 1, 2, 3
 
 WAIT_TIME = 0.5
-MAX_MEMORY = 300*1024*1024
+MAX_MEMORY = 500 * 1024 * 1024
 
 class Game:
+    """CHaserのゲームを管理するクラス"""
 
-    def __init__(self, field, turn):
-        self.logs = []
-        self.turn = turn
-        self.field = [[0]*W for _ in range(H)]
-        self.hot_point = 0
-        self.cool_point = 0
+    def __init__(self, field: list[str], turn: int):
+        self.logs: list[str] = []
+        self.end_turn: int = turn
+        self.now_turn: int = 0
+        self.field: list[list[int]] = [[0]*W for _ in range(H)]
+        self.hot_point: int = 0
+        self.cool_point: int = 0
+
+        self.is_hot: bool = False
+
         for i in range(H):
             for j in range(W):
                 if field[i][j]=='H':
@@ -28,16 +33,18 @@ class Game:
                 else:
                     self.field[i][j] = int(field[i][j])
     
-    def is_done(self):
+    def is_done(self) -> bool:
+        """ゲームが終了しているかどうかを判定する"""
         [hi, hj], [ci, cj] = self.hot, self.cool
         if self.lose(*self.cool) or self.lose(*self.hot):
             return True
-        mounted = self.hot == self.cool
-        puted   = self.field[hi][hj]==WALL or self.field[ci][cj]==WALL
-        finish  = self.turn <= 0
-        return mounted or puted or finish
+        is_mounted = self.hot == self.cool
+        is_puted   = self.field[hi][hj]==WALL or self.field[ci][cj]==WALL
+        is_finish = self.now_turn >= self.end_turn
+        return is_mounted or is_puted or is_finish
     
-    def lose(self, x, y):
+    def lose(self, x: int, y: int) -> bool:
+        """(x, y)に存在する対象が負けているかどうかを判定する"""
         if not(0<=x<H and 0<=y<W):
             return True
         if self.field[x][y] == WALL:
@@ -47,7 +54,8 @@ class Game:
                 return False
         return True
     
-    def return_winner(self):
+    def return_winner(self) -> str:
+        """現時点での勝者を返す"""
         hot_lose = self.lose(*self.hot)
         cool_lose = self.lose(*self.cool)
         if hot_lose == cool_lose:
@@ -61,9 +69,12 @@ class Game:
             return "COOL"
         elif cool_lose:
             return "HOT"
+        else:
+            return "DRAW"
     
-    def step(self, order, is_hot=True):
-        if is_hot:
+    def step(self, order: str) -> str:
+        """プレイヤーの行動を受け取り、次の状態に遷移し、周辺情報を返す"""
+        if self.is_hot:
             self.cool, self.hot = self.hot, self.cool
             self.hot_point, self.cool_point = self.cool_point, self.hot_point
 
@@ -76,17 +87,19 @@ class Game:
         
         self.logs.append(order)
 
-        if is_hot:
+        if self.is_hot:
             self.cool, self.hot = self.hot, self.cool
             self.hot_point, self.cool_point = self.cool_point, self.hot_point
-        
+        self.now_turn += 1
+        self.is_hot = not self.is_hot
         return result
     
-    def check_operation(order):
+    def check_operation(order: str) -> bool:
+        """プレイヤーの行動を示す文字列が正しいかどうかを判定する"""
         act, direct = order
         return act in acts and direct in ds
 
-    def _search(self):
+    def _search(self) -> str:
         x, y = self.cool
         res = ''
         for i in range(-1,2):
@@ -98,7 +111,7 @@ class Game:
                 res += e
         return res
     
-    def search(self, d):
+    def look(self, d: int) -> str:
         self.cool[0] += 2*dx[d]
         self.cool[1] += 2*dy[d]
         res = self._search()
@@ -106,28 +119,28 @@ class Game:
         self.cool[1] -= 2*dy[d]
         return res
     
-    def neibor(self, is_hot=True):
-        if is_hot:
+    def neibor(self) -> str:
+        if self.is_hot:
             self.hot, self.cool = self.cool, self.hot
         res = self._search()
-        if is_hot:
+        if self.is_hot:
             self.hot, self.cool = self.cool, self.hot
         return res
     
-    def look(self, d):
+    def search(self, d: int) -> str:
         res = ''
         for i in range(1, 10):
-            nx, ny = self.hot[0]+dx[d]*i, self.hot[1]+dy[d]*i
+            nx, ny = self.cool[0]+dx[d]*i, self.cool[1]+dy[d]*i
             res += str(WALL if not(0<=nx<H and 0<=ny<W) else \
                        HOT if [nx, ny] == self.hot else \
                        self.field[nx][ny])
         return res
 
-    def put(self, d):
+    def put(self, d: int) -> str:
         self.field[dx[d]+self.cool[0]][dy[d]+self.cool[1]] = WALL
         return self.neibor(is_hot=False)
 
-    def walk(self, d):
+    def walk(self, d: int) -> str:
         [x, y] = self.cool
         nx, ny = x+dx[d], y+dy[d]
         if 0<=nx<H and 0<=ny<W and self.field[nx][ny] == ITEM:
@@ -140,21 +153,23 @@ class Game:
     
     def print_field(self):
         for i in range(H):
-            for j in range(W):
-                if [i, j] == self.hot:
-                    print('H', end='')
-                elif [i, j] == self.cool:
-                    print('C', end='')
-                else:
-                    print(self.field[i][j], end='')
+            for j in range(W):                
+                print('H' if [i, j] == self.hot else \
+                      'C' if [i, j] == self.cool else \
+                      self.field[i][j], end='')
             print()
-        print()
 
 class ChildManager:
+    """プレイヤーごとのプログラムを管理するクラス"""
     def __init__(self):
         self.players = []
+        self.whose_turn = 0
+        self.player_labels = []
     
-    def add_player(self, player_program):
+    def set_player_labels(self, labels: list[str]):
+        self.player_labels = labels
+    
+    def add_player(self, player_program: list[str]):
         self.players.append(subprocess.Popen(player_program, 
             stdout=subprocess.PIPE,
             stdin=subprocess.PIPE,
@@ -162,20 +177,28 @@ class ChildManager:
             preexec_fn=resource.setrlimit(resource.RLIMIT_AS, (MAX_MEMORY, MAX_MEMORY)),
             text=True))
     
-    def send_to_player(self, player, message):
-        self.players[player].stdin.write(message+'\n')
-        self.players[player].stdin.flush()
+    def send_to_player(self, message: str):
+        self.players[self.whose_turn].stdin.write(message+'\n')
+        self.players[self.whose_turn].stdin.flush()
     
-    def receive_from_player(self, player, wait_time) -> [bool, str]:
-        ready, _,_ = select.select([self.players[player].stdout], [], [], wait_time)
-        eready, _,_ = select.select([self.players[player].stderr], [], [], 0)
+    def receive_from_player(self, wait_time: float) -> tuple[bool, str]:
+        """プレイヤーからの出力を受け取る"""
+        ready, _,_ = select.select([self.players[self.whose_turn].stdout], [], [], wait_time)
+        eready, _,_ = select.select([self.players[self.whose_turn].stderr], [], [], 0)
+
         if len(eready):
-            return [False, self.players[player].stderr.read().strip()]
+            output = self.players[self.whose_turn].stderr.readline().strip()
+            self.whose_turn = (self.whose_turn + 1) % len(self.players)
+            return False, self.player_labels[self.whose_turn] if self.whose_turn < len(self.player_labels) else "", output
         elif ready:
-            output = self.players[player].stdout.readline().strip()
-            return [True, output]
+            output = self.players[self.whose_turn].stdout.readline().strip()
+            self.whose_turn = (self.whose_turn + 1) % len(self.players)
+            return True, self.player_labels[self.whose_turn] if self.whose_turn < len(self.player_labels) else "", output
         else:
-            return [False, "時間切れ。無限ループが発生している可能性があります."]
+            self.whose_turn = (self.whose_turn + 1) % len(self.players)
+            return False, self.player_labels[self.whose_turn] if self.whose_turn < len(self.player_labels) else "", "時間切れ。無限ループが発生している可能性があります."
+        
+
     
     def stop_players(self):
         for player in self.players:
@@ -185,31 +208,36 @@ class ChildManager:
 # return log
 def play_game(player1, player2, field, turn):
     manager = ChildManager()
+    manager.set_player_labels(["COOL", "HOT"])
     manager.add_player(player1)
     manager.add_player(player2)
     game = Game(field, turn)
 
-    # 0: cool, 1: hot
-    player_flag = 0
     winner = "DRAW"
-    errors = ["", ""]
+    cool_error = ""
+    hot_error = ""
 
-    while not game.is_done() and game.turn > 0:
-        neib = game.neibor(player_flag)
-
-        manager.send_to_player(player_flag, neib)
-        ok, result = manager.receive_from_player(player_flag, WAIT_TIME)
+    while not game.is_done():
+        neib = game.neibor()
+        manager.send_to_player(neib)
+        ok, player, result = manager.receive_from_player(WAIT_TIME)
         if not ok:
-            errors[player_flag] = result
-            winner = "COOL" if player_flag else "HOT"
+            if player == "COOL":
+                cool_error = result
+                winner = "HOT"
+            else:
+                hot_error = result
+                winner = "COOL"
             break
         if not Game.check_operation(result):
-            errors[player_flag] = "不正な操作が行われました。"
-            winner = "COOL" if player_flag else "HOT"
+            if player == "COOL":
+                cool_error = "不正な操作が行われました。"
+                winner = "HOT"
+            else:
+                hot_error = "不正な操作が行われました。"
+                winner = "COOL"
             break
-        manager.send_to_player(player_flag, game.step(result, player_flag))
-        game.turn -= 1
-        player_flag = 1 - player_flag
+        manager.send_to_player(game.step(result))
 
         # game.print_field()
         # print('player act: ', result)
@@ -222,8 +250,8 @@ def play_game(player1, player2, field, turn):
     return {
         "log": game.logs,
         "winner": winner,
-        "player1_error": errors[0],
-        "player2_error": errors[1]
+        "player1_error": cool_error,
+        "player2_error": hot_error
     }
 
 def api(event, context):
@@ -261,25 +289,9 @@ if __name__ == '__main__':
     ]
     turn = 100
 
-    player1 = ['python3', './samples/ii.py']
+    player1 = ['python3', './samples/randomchoice.py']
     player2 = ['python3', './samples/randomchoice.py']
     result = play_game(player1, player2, field, turn)
 
     print('past time: ', time.time()-now)
     print(result)
-
-#     import requests
-
-#     data = {
-#         "Acts": result['log'],
-#         "Winner": result['winner'],
-#         "Field": field,
-#         "Turn": turn
-#     }
-
-#     print(data)
-#     print(len(data['Acts']))
-    
-#     # res = requests.post("https://hr5gyqk5rkxjtfdeyyskr5nc640kpscb.lambda-url.ap-northeast-1.on.aws/", json=data)
-
-#     # print(res.text)

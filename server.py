@@ -1,9 +1,7 @@
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-import boto3
 import os
-import json
 import requests
 import random
 
@@ -31,21 +29,24 @@ app.add_middleware(
 def read_root():
     return {"Hello": "World"}
 
-# 入力json形式は以下の通り
-# {
-#     "c_id": str,
-#     "c_slot": int,
-#     "h_id": str,
-#     "h_slot": int
-#     "board": [
-#         '000300000300000',
-#         ...
-#         '000003000003000'
-#     ],
-#     "turn": 100
-# }
+
 @app.post("/battle", status_code=200)
 def battle(body: dict, response: Response):
+    """
+    @body: dict["c_id": str, "c_slot": int, "h_id": str, "h_slot": int, "board": List[str], "turn": int]
+    例えば以下のような形式
+    {
+        "c_id": "Sample",
+        "c_slot": 0,
+        "h_id": "Sample",
+        "h_slot": 1,
+        "board": [
+            '000300000300000',
+            ...
+            '000300000300000',
+        ],
+        "turn": 100
+    """
     delete_files = []
     try:
         board = body['board']
@@ -67,7 +68,7 @@ def battle(body: dict, response: Response):
         ch_script = [[], []]
         for program, script in zip(ch_program, ch_script):
             if program['language'] == 'python':
-                script.extend(['python3', '-c', program['program']])
+                script.extend(['pypy3', '-c', program['program']])
             elif program['language'] == 'cpp':
                 file_name = str(random.randint(0, 100000000)) + 'exec'
                 os.system(f"echo '{c_program['program']}' > {file_name}.cpp")

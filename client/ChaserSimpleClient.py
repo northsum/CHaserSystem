@@ -1,4 +1,9 @@
-class Client:
+
+TURN_START = '@'
+TURN_END = '#'
+GAME_END = '0'
+
+class ChaserSimpleClient():
     def __init__(self):
         pass
 
