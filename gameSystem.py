@@ -138,7 +138,7 @@ class Game:
 
     def put(self, d: int) -> str:
         self.field[dx[d]+self.cool[0]][dy[d]+self.cool[1]] = WALL
-        return self.neibor(is_hot=False)
+        return self.neibor()
 
     def walk(self, d: int) -> str:
         [x, y] = self.cool
@@ -149,7 +149,7 @@ class Game:
             self.cool_point += 1
         self.cool = [nx, ny]
         
-        return self.neibor(is_hot=False)
+        return self.neibor()
     
     def print_field(self):
         for i in range(H):
