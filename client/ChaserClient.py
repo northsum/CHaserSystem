@@ -1,9 +1,23 @@
 import builtins
+
 def print(*args, **kwargs):
     pass
 
-class Client:
-    def __init__(self):
+TURN_START = '@'
+TURN_END = '#'
+GAME_END = '0'
+
+class ChaserClient():
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def connect(self, *args, **kwargs):
+        pass
+
+    def close(self, *args, **kwargs):
+        pass
+
+    def turn_end(self, *args, **kwargs):
         pass
 
     def get_ready(self):
@@ -60,8 +74,3 @@ class Client:
     
     def put_down(self):
         return self._action("pd")
-    
-
-# if __name__ == '__main__':
-#     print_instead("CHaser.py")
-#     print('this is not appear')

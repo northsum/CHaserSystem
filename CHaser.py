@@ -1,12 +1,26 @@
+# print機能を無効化
+import builtins
+def print(*args, **kwargs):
+    pass
+
 class Client:
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def connect(self, *args, **kwargs):
+        pass
+
+    def close(self, *args, **kwargs):
+        pass
+
+    def turn_end(self, *args, **kwargs):
         pass
 
     def get_ready(self):
         return input()
     
     def _action(self, action: str):
-        print(action)
+        builtins.print(action)
         return input()
     
     def walk_right(self):
@@ -56,3 +70,8 @@ class Client:
     
     def put_down(self):
         return self._action("pd")
+    
+
+if __name__ == '__main__':
+    print_instead("CHaser.py")
+    print('this is not appear')

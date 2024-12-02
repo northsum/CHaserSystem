@@ -1,17 +1,30 @@
+import builtins
 
 TURN_START = '@'
 TURN_END = '#'
 GAME_END = '0'
 
+def print(*args, **kwargs):
+    pass
+
 class ChaserSimpleClient():
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def connect(self, *args, **kwargs):
+        pass
+
+    def close(self, *args, **kwargs):
+        pass
+
+    def turn_end(self, *args, **kwargs):
         pass
 
     def get_ready(self):
         return input()
     
     def _action(self, action: str):
-        print(action)
+        builtins.print(action)
         return input()
     
     def walk_right(self):

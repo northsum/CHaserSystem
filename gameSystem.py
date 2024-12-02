@@ -96,7 +96,10 @@ class Game:
     
     def check_operation(order: str) -> bool:
         """プレイヤーの行動を示す文字列が正しいかどうかを判定する"""
-        act, direct = order
+        try:
+            act, direct = order
+        except:
+            raise ValueError(f'order is invalid: {order}')
         return act in acts and direct in ds
 
     def _search(self) -> str:
@@ -239,9 +242,9 @@ def play_game(player1, player2, field, turn):
             break
         manager.send_to_player(game.step(result))
 
-        # game.print_field()
-        # print('player act: ', result)
-        # time.sleep(0.5)
+        game.print_field()
+        print('player act: ', result)
+        time.sleep(0.5)
     
     if winner == "DRAW":
         winner = game.return_winner()
@@ -287,10 +290,10 @@ if __name__ == '__main__':
         '0000000000000H0',
         '000003000003000'
     ]
-    turn = 100
+    turn = 140
 
-    player1 = ['python3', './samples/randomchoice.py']
-    player2 = ['python3', './samples/randomchoice.py']
+    player1 = ['pypy3', './samples/Program.py']
+    player2 = ['pypy3', './samples/Program.py']
     result = play_game(player1, player2, field, turn)
 
     print('past time: ', time.time()-now)
