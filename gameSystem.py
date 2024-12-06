@@ -50,7 +50,10 @@ class Game:
         if self.field[x][y] == WALL:
             return True
         for i in range(4):
-            if self.field[x+dx[i]][y+dy[i]] != WALL:
+            nx, ny = x+dx[i], y+dy[i]
+            if not(0<=nx<H and 0<=ny<W):
+                continue
+            if self.field[nx][ny] != WALL:
                 return False
         return True
     
@@ -74,6 +77,7 @@ class Game:
     
     def step(self, order: str) -> str:
         """プレイヤーの行動を受け取り、次の状態に遷移し、周辺情報を返す"""
+        """必ずself.coolが行動しているようになる"""
         if self.is_hot:
             self.cool, self.hot = self.hot, self.cool
             self.hot_point, self.cool_point = self.cool_point, self.hot_point
@@ -122,12 +126,14 @@ class Game:
         self.cool[1] -= 2*dy[d]
         return res
     
-    def neibor(self) -> str:
-        if self.is_hot:
-            self.hot, self.cool = self.cool, self.hot
+    def neibor(self, by_who=False) -> str:
+        if by_who:
+            if self.is_hot:
+                self.hot, self.cool = self.cool, self.hot
         res = self._search()
-        if self.is_hot:
-            self.hot, self.cool = self.cool, self.hot
+        if by_who:
+            if self.is_hot:
+                self.hot, self.cool = self.cool, self.hot
         return res
     
     def search(self, d: int) -> str:
@@ -140,7 +146,9 @@ class Game:
         return res
 
     def put(self, d: int) -> str:
-        self.field[dx[d]+self.cool[0]][dy[d]+self.cool[1]] = WALL
+        ndx, ndy = dx[d]+self.cool[0], dy[d]+self.cool[1]
+        if 0<=ndx<H and 0<=ndy<W:
+            self.field[ndx][ndy] = WALL
         return self.neibor()
 
     def walk(self, d: int) -> str:
@@ -165,9 +173,9 @@ class Game:
 class ChildManager:
     """プレイヤーごとのプログラムを管理するクラス"""
     def __init__(self):
-        self.players = []
-        self.whose_turn = 0
-        self.player_labels = []
+        self.players: list[list[str]] = []
+        self.whose_turn: int = 0
+        self.player_labels: list[str] = []
     
     def set_player_labels(self, labels: list[str]):
         self.player_labels = labels
@@ -191,16 +199,15 @@ class ChildManager:
 
         if len(eready):
             output = self.players[self.whose_turn].stderr.readline().strip()
-            self.whose_turn = (self.whose_turn + 1) % len(self.players)
             return False, self.player_labels[self.whose_turn] if self.whose_turn < len(self.player_labels) else "", output
         elif ready:
             output = self.players[self.whose_turn].stdout.readline().strip()
-            self.whose_turn = (self.whose_turn + 1) % len(self.players)
             return True, self.player_labels[self.whose_turn] if self.whose_turn < len(self.player_labels) else "", output
         else:
-            self.whose_turn = (self.whose_turn + 1) % len(self.players)
             return False, self.player_labels[self.whose_turn] if self.whose_turn < len(self.player_labels) else "", "時間切れ。無限ループが発生している可能性があります."
         
+    def increment_turn(self):
+        self.whose_turn = (self.whose_turn + 1) % len(self.players)
 
     
     def stop_players(self):
@@ -221,7 +228,7 @@ def play_game(player1, player2, field, turn):
     hot_error = ""
 
     while not game.is_done():
-        neib = game.neibor()
+        neib = game.neibor(by_who=True)
         manager.send_to_player(neib)
         ok, player, result = manager.receive_from_player(WAIT_TIME)
         if not ok:
@@ -241,10 +248,11 @@ def play_game(player1, player2, field, turn):
                 winner = "COOL"
             break
         manager.send_to_player(game.step(result))
+        manager.increment_turn()
 
-        game.print_field()
-        print('player act: ', result)
-        time.sleep(0.5)
+        # game.print_field()
+        # print('player act: ', result)
+        # time.sleep(0.5)
     
     if winner == "DRAW":
         winner = game.return_winner()
@@ -273,27 +281,34 @@ if __name__ == '__main__':
     now = time.time()
     field = [
         '000300000300000',
-        "0C0000000000000",
-        "000300030000300",
-        '022200000000003',
-        '000003000300030',
-        '003000003000000',
-        '000000000000220',
-        '000300030000000',
-        '023000030000032',
-        '300000000003000',
-        '020200000000000',
-        '000000003000300',
-        '000300030000300',
-        '300000000002220',
-        '000003000003000',
-        '0000000000000H0',
+        "0C0000000020000",
+        "000300030020300",
+        '222200000020003',
+        '000003030300030',
+        '000330300000000',
+        '000000222000220',
+        '000300030000003',
+        '230000030000032',
+        '300000030003000',
+        '022000222000000',
+        '000000003033000',
+        '030003030300000',
+        '300020000002222',
+        '003020030003000',
+        '0000200000000H0',
         '000003000003000'
     ]
     turn = 140
 
-    player1 = ['pypy3', './samples/Program.py']
-    player2 = ['pypy3', './samples/Program.py']
+    with open('./samples/Program.py', 'r') as f:
+        s1 = f.read()
+    
+    with open('./samples/randomchoice.py', 'r') as f:
+        s2 = f.read()
+    
+
+    player1 = ['pypy3', '-c', s1]
+    player2 = ['pypy3', '-c', s2]
     result = play_game(player1, player2, field, turn)
 
     print('past time: ', time.time()-now)
