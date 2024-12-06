@@ -69,7 +69,7 @@ def battle(body: dict, response: Response):
 
         # input関数を無効化
         prefix_program = """
-def input(*args, **kwargs):
+def print(*args, **kwargs):
     pass
 """
         for program, script in zip(ch_program, ch_script):
