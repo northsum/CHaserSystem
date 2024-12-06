@@ -66,9 +66,15 @@ def battle(body: dict, response: Response):
         
         ch_program = [c_program.json(), h_program.json()]
         ch_script = [[], []]
+
+        # input関数を無効化
+        prefix_program = """
+def input(*args, **kwargs):
+    pass
+"""
         for program, script in zip(ch_program, ch_script):
             if program['language'] == 'python':
-                script.extend(['pypy3', '-c', program['program']])
+                script.extend(['pypy3', '-c', prefix_program + program['program']])
             elif program['language'] == 'cpp':
                 file_name = str(random.randint(0, 100000000)) + 'exec'
                 os.system(f"echo '{c_program['program']}' > {file_name}.cpp")
