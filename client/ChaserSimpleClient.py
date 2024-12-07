@@ -1,4 +1,5 @@
 import builtins
+from client.ChaserClient import ChaserClient
 
 TURN_START = '@'
 TURN_END = '#'
@@ -9,6 +10,7 @@ def print(*args, **kwargs):
 
 class ChaserSimpleClient():
     def __init__(self, *args, **kwargs):
+        self.client = ChaserClient(*args, **kwargs)
         pass
 
     def connect(self, *args, **kwargs):

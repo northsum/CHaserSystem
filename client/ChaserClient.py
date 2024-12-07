@@ -17,8 +17,20 @@ class ChaserClient():
     def close(self, *args, **kwargs):
         pass
 
+    def _check_ip_addr_format(self, *args, **kwargs):
+        pass
+
+    def _send_command(self, action: str):
+        builtins.print(action)
+
+    def _send_name(self, *args, **kwargs):
+        pass
+
     def turn_end(self, *args, **kwargs):
         pass
+
+    def receive(self): # ダミー
+        return TURN_START, input()
 
     def get_ready(self):
         return input()
